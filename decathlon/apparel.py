@@ -46,7 +46,7 @@ async def get_product_urls(browser, page):
                 if retry_count == MAX_RETRIES - 1:
                     raise Exception('Clicking next button timed out.')
                 # Wait for a random amount of time between 1 and 3 seconds before retrying.
-                await asyncio.sleep(random.uniform(1, 3))
+                await asyncio.sleep(random.uniform(1, 5))
 
     return product_urls
 
@@ -56,11 +56,11 @@ async def get_product_urls(browser, page):
 async def filter_products(browser, page):
     # Expand the product category section
     category_button = await page.query_selector('.adept-filter-list__title--collapsible[aria-label="product category Filter"]')
-    await category_button.click(timeout=600000)
+    await category_button.click(timeout=800000)
     # Check if category section is already expanded.
     is_expanded = await category_button.get_attribute('aria-expanded')
     if is_expanded == 'false':
-        await category_button.click(timeout=600000)
+        await category_button.click(timeout=700000)
     else:
         pass
 
@@ -78,10 +78,10 @@ async def filter_products(browser, page):
     await page.wait_for_selector('.adept-checkbox__input-container', timeout=400000)
 
     # Define a list of checkbox labels to select and clear
-    categories = ["Base Layer", "Cap", "Cropped Leggings", "Cycling Shorts", "Fleece", "Gloves", "Legging 7/8",
-                  "Long-Sleeved T-Shirt", "Padded Jacket", "Short-Sleeved Jersey", "Down Jacket", "Socks",
-                  "Sports Bra", "Sweatshirt", "Tank", "Tracksuit", "Trousers/Pants", "Windbreaker", "Zip-Off Pants",
-                  "Shoes", "Sunglasses", "Sport Bag", "Fitness Mat", "Shorts", "T-Shirt", "Jacket", "Leggings"]
+    categories = ["Base Layer", "Baselayer Bottom", "Bermuda Shorts", "Cap", "Cropped Leggings", "Cycling Shorts", "Fleece", "Gloves", "Legging 7/8",
+                  "Long-Sleeved T-Shirt", "Padded Jacket", "Rain Jacket", "Rigged Hook", "Sandals", "Shoes", "Short-Sleeved Jersey", "Down Jacket", "Socks",
+                  "Sports Bra", "Swim Cap", "T-Shirt", "Tank", "Trousers/Pants", "Zip-Off Pants",
+                  "Softshell", "Ski Pants", "Short-Sleeved Polo Shirt", "Shorts", "Jacket", "Leggings"]
 
     product_urls = []
 
@@ -89,15 +89,27 @@ async def filter_products(browser, page):
     for category in categories:
         # Select the checkbox
         checkbox = await page.query_selector(f'label.adept-checkbox__label:has-text("{category}")')
-        await checkbox.click(timeout=600000)
+        # force click.
+        try:
+            await checkbox.click(force=True)
+        except Exception as e:
+            print(f"Error clicking checkbox for {category}: {e}")
+            continue
+        # Wait for the page to load on specific conditions
+        await page.wait_for_selector('.adept-product-display__title-container', timeout=300000)
+
+         # Print message and continue to next category.
+        print(f"{category} checkbox is checked.")
+        
+        # await checkbox.click(timeout=800000)
         # Check if checkbox is already selected
-        is_checked = await checkbox.get_attribute('aria-checked')
-        if is_checked == 'false':
-            await checkbox.click(timeout=600000)
-        else:
-            print(f"{category} checkbox is checked.")
+        # is_checked = await checkbox.get_attribute('aria-checked')
+        # if is_checked == 'false':
+            # await checkbox.click(timeout=800000)
+        # else:
+            # print(f"{category} checkbox is checked.")
         # Wait for the page to load
-        await asyncio.sleep(10)
+        # await asyncio.sleep(10)
 
         # Get the list of product URLs
         product_urls += [(url, category) for url in await get_product_urls(browser, page)]
@@ -106,12 +118,12 @@ async def filter_products(browser, page):
         clear_filter_button = await page.query_selector(
             f'button.adept-selection-list__close[aria-label="Clear {category.lower()} Filter"]')
         if clear_filter_button is not None:
-            await clear_filter_button.click(timeout=600000)
+            await clear_filter_button.click(timeout=700000)
             print(f"{category} filter cleared.")
         else:
             clear_buttons = await page.query_selector_all('button[aria-label^="Clear"]')
             for button in clear_buttons:
-                await button.click(timeout=600000)
+                await button.click(timeout=700000)
                 print(f"{category} filter cleared.")
         # Wait for the page to load
         await asyncio.sleep(10)
@@ -133,7 +145,8 @@ async def get_product_name(page):
     # Remove any leading/trailing whitespace from the product name and return it
     return product_name.strip()
 
-# Extraction of brand of products.async def get_brand_name(page):
+# Extraction of brand of products.
+async def get_brand_name(page):
     try:
         # Find the SVG title element and get its text content
         brand_name_elem = await page.query_selector("svg[role=\'img\'] title")
@@ -305,6 +318,10 @@ async def perform_request_with_retry(page, url):
 async def main():
     # Launch a Firefox browser using Playwright
     async with async_playwright() as pw:
+        #browser = await pw.chromium.launch(proxy={'server': '172.65.64.100:6060',
+        #'username':'rc6gnrm50qybx4u-country-us',
+        #'password':'gr7iorzl6g7fllv'
+        #})
         browser = await pw.chromium.launch()
         page = await browser.new_page()
 
