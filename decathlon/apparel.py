@@ -318,10 +318,6 @@ async def perform_request_with_retry(page, url):
 async def main():
     # Launch a Firefox browser using Playwright
     async with async_playwright() as pw:
-        #browser = await pw.chromium.launch(proxy={'server': '172.65.64.100:6060',
-        #'username':'rc6gnrm50qybx4u-country-us',
-        #'password':'gr7iorzl6g7fllv'
-        #})
         browser = await pw.chromium.launch()
         page = await browser.new_page()
 
